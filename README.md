@@ -1,160 +1,165 @@
 # Finance Tracker CLI
 
-A command-line personal finance tracker that lets users log income and expenses with category organization.
+> A command-line personal finance tracker built with Clean Architecture principles.
 
-## Stage 1: Architecture Design
+[![CI Pipeline](https://github.com/Huseyn-c/finance-tracker-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Huseyn-c/finance-tracker-cli/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg)](https://github.com/Huseyn-c/finance-tracker-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### 1. Use Case Cards
+Track your income and expenses directly from the terminal. Organize transactions by category, filter by date or type, and persist data via SQLite or SQLAlchemy.
 
-#### Add Transaction
-**Actor:** CLI User  
-**Inputs:** amount, description, type (income/expense), categories, date (default today)  
-**Happy Path:**
-1. Validate amount > 0
-2. Create `Transaction` entity
-3. Persist via `TransactionRepository.add()`
-4. Return "Transaction added successfully"
-**Failure:** invalid amount → "Amount must be positive"
+---
 
-#### List Transactions
-**Actor:** CLI User  
-**Inputs:** --after, --before, --category, --type filters  
-**Happy Path:**
-1. Parse filter parameters
-2. Retrieve transactions via `TransactionRepository.list()`
-3. Format and display results
-**Failure:** invalid date → "Invalid date format"
+## ✨ Features
 
-#### Remove Transaction
-**Actor:** CLI User  
-**Inputs:** transaction_id  
-**Happy Path:**
-1. Find transaction by ID
-2. Remove via `TransactionRepository.remove()`
-3. Return "Transaction removed"
-**Failure:** not found → "Transaction not found"
+- 💰 **Transaction management** — add, list, and remove income/expense entries
+- 🏷️ **Category system** — organize transactions with custom categories
+- 🔍 **Smart filtering** — filter transactions by date range, type, or category
+- 💾 **Dual persistence** — choose between SQLite (raw) or SQLAlchemy (ORM) backend
+- 📋 **Structured logging** — all operations logged to `logs/finance_tracker.log`
+- ✅ **91% test coverage** — robust pytest suite with CI/CD pipeline
+- 🏗️ **Clean Architecture** — strict separation of concerns across 4 layers
 
-#### Add Category
-**Actor:** CLI User  
-**Inputs:** name, description  
-**Happy Path:**
-1. Validate name uniqueness
-2. Create `Category` entity
-3. Persist via `CategoryRepository.add()`
-4. Return "Category created"
-**Failure:** duplicate name → "Category already exists"
+---
 
-#### List Categories
-**Actor:** CLI User  
-**Inputs:** none  
-**Happy Path:**
-1. Retrieve all via `CategoryRepository.list_all()`
-2. Display category list
-**Failure:** none
+## 🚀 Quick Start
 
-#### Remove Category
-**Actor:** CLI User  
-**Inputs:** category_id  
-**Happy Path:**
-1. Find category by ID
-2. Remove via `CategoryRepository.remove()`
-3. Return "Category removed"
-**Failure:** not found → "Category not found"
+### Prerequisites
 
-### 2. Domain Model
+- Python 3.12+
+- [uv](https://github.com/astral-sh/uv) package manager
 
-+----------------+
-|   Transaction  |
-|----------------|
-|id: UUID        |
-|amount: float	 | # > 0
-|type: TxType	 | # income/expense
-|description: str|
-|date: datetime  |
-|created_at: dt  |
-+----------------+
-    ^ *
-    | belongs-to
-+----------------+
-|    Category    |
-|----------------|
-|id: UUID        |
-|name: str	     |
-|description: str|
-+----------------+
+### Installation
 
+```bash
+# Clone the repository
+git clone https://github.com/Huseyn-c/finance-tracker-cli.git
+cd finance-tracker-cli
 
-**Invariants:** `amount > 0`, `type in {income, expense}`, `categories ≥ 0`
+# Install dependencies
+uv sync
+```
 
-### 3. Layered Architecture
-┌──────────────┐ User input / output
-│ Presentation │ (CLI using Typer)
+### Usage
+
+```bash
+# Add an income transaction
+uv run finance add 1500 "Monthly salary" --type income --category salary
+
+# Add an expense
+uv run finance add 50 "Coffee with friends" --type expense --category food
+
+# List all transactions
+uv run finance list
+
+# Filter transactions
+uv run finance list --type expense --category food
+uv run finance list --after 2025-01-01 --before 2025-12-31
+
+# Remove a transaction by ID
+uv run finance remove TRANSACTION_ID
+
+# Manage categories
+uv run finance list-categories
+uv run finance remove-category food
+```
+
+### Switching Backend
+
+By default the app uses raw SQLite. To use SQLAlchemy ORM instead:
+
+```bash
+export FINANCE_TRACKER_BACKEND=sqlalchemy
+uv run finance add 100 "Test" --type income
+```
+
+---
+
+## 🏗️ Architecture
+
+The project follows **Clean Architecture** with strict dependency rules — outer layers depend on inner layers, never the reverse.
+
+```
+┌──────────────┐   User input / output
+│ Presentation │   (CLI using Typer)
 └──────┬───────┘
-│ calls
-┌──────▼───────┐ Orchestrates use cases
-│ Application │ (TransactionService, CategoryService)
+       │ calls
+┌──────▼───────┐   Use case coordination
+│ Application  │   (TransactionService, DTOs)
 └──────┬───────┘
-│ uses
-┌──────▼───────┐ Pure business rules & entities
-│ Domain │ (Transaction, Category)
+       │ uses
+┌──────▼───────┐   Pure business rules
+│   Domain     │   (Transaction, TransactionType)
 └──────┬───────┘
-│ implements ports
-┌──────▼───────┐ External details
-│Infrastructure│ (SQLite repositories)
+       │ implements ports
+┌──────▼───────┐   External details
+│Infrastructure│   (SQLite + SQLAlchemy repositories)
 └──────────────┘
+```
 
-**Dependency rule:** arrows only point inward.
+📖 **Full architecture documentation:** [`docs/howto_architecture.md`](docs/howto_architecture.md)
 
-**Responsibilities:**
-- **Presentation:** CLI argument parsing, output formatting
-- **Application:** Use case coordination, service logic
-- **Domain:** Business entities and validation rules
-- **Infrastructure:** SQLite database operations
+---
 
-### 4. Ports / Interfaces
+## 🛠️ Tech Stack
 
-```python
-class TransactionRepository(Protocol):
-    def add(self, tx: Transaction) -> None: ...
-    def get(self, tx_id: UUID) -> Transaction | None: ...
-    def list(self, *, after: date | None = None, 
-             before: date | None = None,
-             category: str | None = None,
-             type: str | None = None) -> list[Transaction]: ...
-    def remove(self, tx_id: UUID) -> bool: ...
+| Category | Technologies |
+|----------|--------------|
+| **Language** | Python 3.12 |
+| **CLI Framework** | Typer |
+| **Validation** | Pydantic |
+| **Database** | SQLite, SQLAlchemy ORM |
+| **Testing** | pytest, pytest-cov |
+| **Code Quality** | Ruff (linter), Pyright (type checker) |
+| **Package Management** | uv |
+| **CI/CD** | GitHub Actions |
 
-class CategoryRepository(Protocol):
-    def add(self, category: Category) -> None: ...
-    def get(self, cat_id: UUID) -> Category | None: ...
-    def get_by_name(self, name: str) -> Category | None: ...
-    def list_all(self) -> list[Category]: ...
-    def remove(self, cat_id: UUID) -> bool: ...
+---
 
-### 5. End-to-end feature flow
+## 🧪 Development
+
+```bash
+# Run tests
+uv run pytest
+
+# Run tests with coverage
+uv run pytest --cov=src --cov-report=html
+
+# Run linter
+uv run ruff check .
+
+# Run type checker
+uv run pyright src
+```
+
+---
+
+## 📂 Project Structure
 
 ```
-CLI (Presentation layer)
-└─ command `add()` collects from user:
-      amount=1500.00, type=income, categories=['salary'], description='Monthly salary'
-   ↓
-Application layer
-└─ `TransactionService.add_transaction()`
-      • validates amount > 0
-      • builds Domain entity: Transaction(...)
-      • enforces business rules
-      • calls `TransactionRepository.add(transaction)`
-        ↓
-Infrastructure layer
-└─ `SQLiteTransactionRepository.add()`
-      • maps entity → database model
-      • INSERT INTO transactions ...
-      • returns success
-   ↑
-Application layer
-└─ constructs success response
-   ↑
-CLI
-└─ prints "Transaction added successfully"
+finance-tracker-cli/
+├── src/finance_tracker/
+│   ├── cli/                  # Presentation layer (Typer commands)
+│   ├── application/          # Application layer (services, DTOs)
+│   ├── domain/               # Domain layer (entities, business rules)
+│   └── infrastructure/       # Infrastructure (SQLite, SQLAlchemy)
+├── tests/                    # Test suite (16 tests, 91% coverage)
+├── docs/                     # Architecture documentation
+├── .github/workflows/        # CI/CD pipeline
+└── pyproject.toml            # Project configuration
 ```
-# Updated: Sat Nov 15 00:23:56 CET 2025
- 
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👤 Author
+
+**Huseyn Guseynov**
+B.Sc. Software Engineering and Design @ Constructor University, Bremen
+- GitHub: [@Huseyn-c](https://github.com/Huseyn-c)
