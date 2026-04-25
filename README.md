@@ -160,6 +160,6 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ## 👤 Author
 
-**Huseyn Guseynov**
+**Huseyn Huseynov**
 B.Sc. Software Engineering and Design @ Constructor University, Bremen
 - GitHub: [@Huseyn-c](https://github.com/Huseyn-c)
