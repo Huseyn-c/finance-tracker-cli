@@ -98,7 +98,7 @@ The project follows **Clean Architecture** with strict dependency rules — oute
 └──────────────┘
 ```
 
-📖 **Full architecture documentation:** [`docs/howto_architecture.md`](docs/howto_architecture.md)
+📖 **Full architecture documentation:** [`docs/architecture.md`](docs/architecture.md)
 
 ---
 
