@@ -1,0 +1,47 @@
+[project]
+name = "finance-tracker-cli"
+version = "1.0.0"
+description = "CLI personal finance tracker built with Clean Architecture"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.9.0",
+    "pydantic<2.0.0",
+    "rich>=13.0.0",
+    "pytest>=8.4.0",
+    "pytest-cov>=6.1.1",
+    "ruff>=0.12.0",
+    "sqlalchemy>=2.0.44",
+    "pyrefly>=0.41.3",
+]
+
+[project.scripts]
+finance = "finance_tracker.cli.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/finance_tracker"]
+
+[tool.ruff]
+line-length = 100
+exclude = ["tests"]
+force-exclude = true
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "I", "B", "UP", "N", "D", "C4", "SIM", "ARG", "ANN", "S"
+]
+ignore = ["D2", "D4"]
+
+[tool.pyright]
+include = ["src"]
+exclude = ["**/venv/**", "**/.venv/**"]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.407",
+]
+ 
